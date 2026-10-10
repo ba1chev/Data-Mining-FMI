@@ -3,10 +3,10 @@
 #include <unordered_map>
 #include <unordered_set>
 
-void bfs(std::unordered_map<int, std::unordered_set<int>>& graph, 
+bool bfs(std::unordered_map<int, std::unordered_set<int>>& graph, 
     const int startNode, const int goalNode) {
     if (startNode == goalNode) {
-        return;
+        return true;
     }
 
     std::unordered_set<int> visited;
@@ -19,18 +19,18 @@ void bfs(std::unordered_map<int, std::unordered_set<int>>& graph,
         const int current = q.front();
         q.pop();
         if (current == goalNode) {
-            return;
+            return true;
         }
 
         for (const int currentChild: graph[current]) {
             if (visited.find(currentChild) == visited.end()) {
                 q.push(currentChild);
                 visited.insert(currentChild);
-                std::cout << currentChild << " ";
             }
         }
-        std::cout << std::endl;
     }
+    
+    return false;
 }
 
 int main() {

@@ -31,14 +31,14 @@ public:
 };
 
 std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
-    const int start, const int end, const int countOfNodes) {
+    const int startNode, const int goalNode, const int countOfNodes) {
     std::vector<int> distances(countOfNodes, INT_MAX);
     std::vector<bool> visited(countOfNodes, false);
     std::vector<int> parents(countOfNodes, -1);
     std::priority_queue<Node> q;
 
-    distances[start] = 0;
-    q.push(Node(start, 0));
+    distances[startNode] = 0;
+    q.push(Node(startNode, 0));
     while (!q.empty()) {
         Node currentNode = q.top();
         q.pop();
@@ -48,9 +48,9 @@ std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
         }
         visited[currentNode.node] = true;
 
-        if (currentNode.node == end) {
+        if (currentNode.node == goalNode) {
             std::vector<int> result;
-            for (int i = end; i != -1; i = parents[i]) {
+            for (int i = goalNode; i != -1; i = parents[i]) {
                 result.push_back(i);
             }
             
