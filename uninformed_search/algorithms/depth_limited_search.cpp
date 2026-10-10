@@ -9,8 +9,9 @@ void dls(std::unordered_map<int, std::unordered_set<int>>& graph,
         return;
     }
 
-    const auto iterator = bestDepth.find(currentNode);
-    if (iterator != bestDepth.end() && iterator->second <= counter) {
+    const auto& currentIterator = bestDepth.find(currentNode);
+    if (currentIterator != bestDepth.end() && 
+        currentIterator->second <= counter) {
         return;
     }
 
