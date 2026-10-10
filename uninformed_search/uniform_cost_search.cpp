@@ -23,6 +23,11 @@ struct Edge {
 public:
     int to = 0;
     int weight = 0;
+
+    Edge(const int to, const int weight) {
+        this->to = to;
+        this->weight = weight;
+    }
 };
 
 std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
