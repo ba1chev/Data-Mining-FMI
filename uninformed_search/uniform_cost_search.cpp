@@ -25,7 +25,6 @@ public:
     int weight = 0;
 };
 
-
 std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
     const int start, const int end, const int countOfNodes) {
     std::vector<int> distances(countOfNodes, INT_MAX);
@@ -68,12 +67,6 @@ std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
 }
 
 int main() {
-    // Graph:
-    //   0 --1--> 1 --2--> 3
-    //   0 --4--> 2 --1--> 3
-    //   1 --5--> 4
-    //   3 --1--> 4
-    // Shortest path 0->4: 0->1->3->4 (cost 4)
     std::unordered_map<int, std::vector<Edge>> graph;
     graph[0].push_back({1, 1});
     graph[0].push_back({2, 4});
