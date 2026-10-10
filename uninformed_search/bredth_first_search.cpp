@@ -3,13 +3,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
-void bfs(std::unordered_map<int, std::unordered_set<int>>& graph, const int start) {
+void bfs(std::unordered_map<int, std::unordered_set<int>>& graph, const int startNode) {
     std::unordered_set<int> visited;
     std::queue<int> q;
 
-    q.push(start);
-    visited.insert(start);
-    std::cout << start << std::endl;
+    q.push(startNode);
+    visited.insert(startNode);
+    std::cout << startNode << std::endl;
     while (!q.empty()) {
         const int current = q.front();
         q.pop();
