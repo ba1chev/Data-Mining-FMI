@@ -3,7 +3,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
-void bfs(std::unordered_map<int, std::unordered_set<int>>& graph, const int startNode) {
+void bfs(std::unordered_map<int, std::unordered_set<int>>& graph, 
+    const int startNode, const int goalNode) {
+    if (startNode == goalNode) {
+        return;
+    }
+
     std::unordered_set<int> visited;
     std::queue<int> q;
 
@@ -13,6 +18,9 @@ void bfs(std::unordered_map<int, std::unordered_set<int>>& graph, const int star
     while (!q.empty()) {
         const int current = q.front();
         q.pop();
+        if (current == goalNode) {
+            return;
+        }
 
         for (const int currentChild: graph[current]) {
             if (visited.find(currentChild) == visited.end()) {
@@ -34,7 +42,7 @@ int main() {
     graph[0].insert(1);
     graph[0].insert(2);
     graph[0].insert(3);
-    bfs(graph, 0);
+    bfs(graph, 0, 3);
 
     return 0;
 }

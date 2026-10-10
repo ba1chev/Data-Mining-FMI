@@ -3,16 +3,18 @@
 #include <unordered_set>
 
 void dfs(std::unordered_map<int, std::unordered_set<int>>& graph,
-    std::unordered_set<int>& visited, const int currentNode) {
+    std::unordered_set<int>& visited, const int currentNode, const int goalNode) {
+    if (currentNode == goalNode) {
+        return;
+    }
     if (visited.find(currentNode) != visited.end()) {
         return;
     }
 
-    std::cout << currentNode << std::endl;
     visited.insert(currentNode);
     for (const int currentChild: graph[currentNode]) {
         if (visited.find(currentChild) == visited.end()) {
-            dfs(graph, visited, currentChild);
+            dfs(graph, visited, currentChild, goalNode);
         }
     }
 }
@@ -28,6 +30,6 @@ int main() {
     graph[0].insert(3);
 
     std::unordered_set<int> visited;
-    dfs(graph, visited, 0);
+    dfs(graph, visited, 0, 3);
     return 0;
 }
