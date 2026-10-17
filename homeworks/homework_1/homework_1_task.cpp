@@ -166,7 +166,7 @@ bool dfs(std::unordered_map<size_t, std::unordered_set<size_t>>& graph,
     return false;
 }
 
-int main() {
+void solveTask() {
     // Entering input data
     size_t N = 0;
     std::cin >> N;
@@ -186,5 +186,9 @@ int main() {
             std::cout << currentStateNode << std::endl;
         }
     }
+}
+
+int main() {
+    solveTask();
     return 0;
 }
