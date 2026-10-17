@@ -24,7 +24,7 @@ int main() {
     auto end = std::chrono::high_resolution_clock::now();
 
     double averageMs = std::chrono::duration<double, std::milli>(end - start).count() / RUNS;
-    std::cout << "# TIMES_MS: alg=" << averageMs << "\n";
+    std::cout << "# TIMES_MS: alg=" << averageMs << std::endl;
 
     return 0;
 }
