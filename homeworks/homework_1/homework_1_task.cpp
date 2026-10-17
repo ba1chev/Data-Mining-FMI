@@ -188,7 +188,9 @@ void solveTask() {
     }
 }
 
+#ifndef PROFILING_MODE
 int main() {
     solveTask();
     return 0;
 }
+#endif
