@@ -3,16 +3,16 @@
 #include <iostream>
 #include <utility>
 
-enum class StateNodeType : uint8_t {
+enum class StateNodeType: uint8_t {
     START, END
 };
 
-enum class Direction : uint8_t {
+enum class Direction: uint8_t {
     RIGHT, LEFT
 };
 
-Direction opposite(Direction d) {
-    return d == Direction::RIGHT ? Direction::LEFT : Direction::RIGHT;
+Direction opposite(Direction direction) {
+    return direction == Direction::RIGHT ? Direction::LEFT : Direction::RIGHT;
 }
 
 struct StateNode {
@@ -23,8 +23,8 @@ public:
 
     StateNode() = default;
     StateNode(const std::string& dataState,
-              const size_t separatorIndex, StateNodeType type)
-        : dataState(dataState), separatorIndex(separatorIndex), type(type) {}
+        const size_t separatorIndex, StateNodeType type): 
+        dataState(dataState), separatorIndex(separatorIndex), type(type) {}
 
     void modify(size_t leftIndex, size_t rightIndex) {
         if (leftIndex > rightIndex) {
@@ -43,7 +43,7 @@ public:
         std::swap(dataState[leftIndex], dataState[rightIndex]);
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const StateNode& stateNode) {
+    friend std::ostream& operator << (std::ostream& os, const StateNode& stateNode) {
         os << stateNode.dataState;
         return os;
     }
@@ -132,8 +132,8 @@ class RuleBasedSolver {
     }
 
 public:
-    RuleBasedSolver(StateNode stateNode, size_t N)
-        : stateNode(std::move(stateNode)), N(N) {}
+    RuleBasedSolver(StateNode stateNode, size_t N): 
+        stateNode(std::move(stateNode)), N(N) {}
 
     void solve(std::ostream& out) {
         out << stateNode << '\n';
@@ -151,7 +151,6 @@ void solveTask() {
     std::cin >> N;
 
     StateNode startStateNode = BUILD::buildNode(N, StateNodeType::START);
-
     RuleBasedSolver solver(std::move(startStateNode), N);
     solver.solve(std::cout);
 }
