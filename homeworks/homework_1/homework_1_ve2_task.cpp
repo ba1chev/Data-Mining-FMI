@@ -80,6 +80,7 @@ namespace BUILD {
 }
 
 class RuleBasedSolver {
+private:
     StateNode stateNode;
     size_t N;
 
