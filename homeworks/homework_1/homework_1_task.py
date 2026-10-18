@@ -1,5 +1,4 @@
 import sys
-import copy
 from enum import IntEnum
 
 sys.setrecursionlimit(1_000_000)
@@ -39,12 +38,10 @@ class StateNode:
             self.separatorIndex = rightIndex
         elif self.separatorIndex == rightIndex:
             self.separatorIndex = leftIndex
-        chars = list(self.dataState)
-        chars[leftIndex], chars[rightIndex] = chars[rightIndex], chars[leftIndex]
-        self.dataState = "".join(chars)
+        self.dataState[leftIndex], self.dataState[rightIndex] = self.dataState[rightIndex], self.dataState[leftIndex]
 
     def __str__(self) -> str:
-        return self.dataState
+        return "".join(self.dataState)
 
 
 class CONSTANTS:
@@ -72,70 +69,56 @@ class BUILD:
         else:
             raise RuntimeError("Invalid input data")
 
-        return StateNode.create(resultNodeState, N, type)
+        return StateNode.create(list(resultNodeState), N, type)
 
 
-def generateNeighbourStates(gameStateNode: StateNode) -> list:
-    resultNeighboursNodes = []
+def generateNeighbourMoves(gameStateNode: StateNode) -> list:
+    resultMoves = []
     separatorIndex = gameStateNode.separatorIndex
     size = len(gameStateNode.dataState)
 
     # Slide: right-facing frog moves one position forward into the empty slot
     if (separatorIndex > 0 and
             gameStateNode.dataState[separatorIndex - 1] == CONSTANTS.RIGHT_ARROW):
-        currentStateNode = copy.copy(gameStateNode)
-        currentStateNode.stateNodeId = StateNode.idMask
-        StateNode.idMask += 1
-        currentStateNode.modify(separatorIndex, separatorIndex - 1)
-        resultNeighboursNodes.append(currentStateNode)
+        resultMoves.append((separatorIndex, separatorIndex - 1))
 
     # Jump: right-facing frog leaps two positions over the opposite-facing frog in between
     if (separatorIndex >= 2 and
             gameStateNode.dataState[separatorIndex - 2] == CONSTANTS.RIGHT_ARROW and
             gameStateNode.dataState[separatorIndex - 1] == CONSTANTS.LEFT_ARROW):
-        currentStateNode = copy.copy(gameStateNode)
-        currentStateNode.stateNodeId = StateNode.idMask
-        StateNode.idMask += 1
-        currentStateNode.modify(separatorIndex, separatorIndex - 2)
-        resultNeighboursNodes.append(currentStateNode)
+        resultMoves.append((separatorIndex, separatorIndex - 2))
 
     # Slide: left-facing frog moves one position forward into the empty slot
     if (separatorIndex < size - 1 and
             gameStateNode.dataState[separatorIndex + 1] == CONSTANTS.LEFT_ARROW):
-        currentStateNode = copy.copy(gameStateNode)
-        currentStateNode.stateNodeId = StateNode.idMask
-        StateNode.idMask += 1
-        currentStateNode.modify(separatorIndex, separatorIndex + 1)
-        resultNeighboursNodes.append(currentStateNode)
+        resultMoves.append((separatorIndex, separatorIndex + 1))
 
     # Jump: left-facing frog leaps two positions over the opposite-facing frog in between
     if (separatorIndex < size - 2 and
             gameStateNode.dataState[separatorIndex + 2] == CONSTANTS.LEFT_ARROW and
             gameStateNode.dataState[separatorIndex + 1] == CONSTANTS.RIGHT_ARROW):
-        currentStateNode = copy.copy(gameStateNode)
-        currentStateNode.stateNodeId = StateNode.idMask
-        StateNode.idMask += 1
-        currentStateNode.modify(separatorIndex, separatorIndex + 2)
-        resultNeighboursNodes.append(currentStateNode)
+        resultMoves.append((separatorIndex, separatorIndex + 2))
 
-    return resultNeighboursNodes
+    return resultMoves
 
 
-def dfs(graph: dict, visited: set, nodePath: list,
+def dfs(visited: set, nodePath: list,
         currentNode: StateNode, goalNode: StateNode) -> bool:
-    # Recording the state before exploring its children so backtracking can undo it
-    nodePath.append(currentNode)
+    # Recording the state snapshot before exploring its children so backtracking can undo it
+    currentSnapshot = "".join(currentNode.dataState)
+    nodePath.append(currentSnapshot)
     if currentNode.dataState == goalNode.dataState:
         return True
 
-    visited.add(currentNode.dataState)
-    neighbours = generateNeighbourStates(currentNode)
-    for childNode in neighbours:
-        graph.setdefault(currentNode.stateNodeId, set()).add(childNode.stateNodeId)
-        if childNode.dataState in visited:
-            continue
-        if dfs(graph, visited, nodePath, childNode, goalNode):
-            return True
+    visited.add(currentSnapshot)
+    for (a, b) in generateNeighbourMoves(currentNode):
+        currentNode.modify(a, b)
+        childSnapshot = "".join(currentNode.dataState)
+        if childSnapshot not in visited:
+            if dfs(visited, nodePath, currentNode, goalNode):
+                return True
+        # Undo the move — same swap restores the previous state
+        currentNode.modify(a, b)
 
     nodePath.pop()
     return False
@@ -150,14 +133,13 @@ def solveTask() -> None:
     endStateNode = BUILD.buildNode(N, StateNodeType.END)
 
     # Defining data structures used by the DFS search
-    graph = {}
     visited = set()
     nodePath = []
 
     # Executing the modified dfs algorithm
-    if dfs(graph, visited, nodePath, startStateNode, endStateNode):
-        for currentStateNode in nodePath:
-            print(currentStateNode)
+    if dfs(visited, nodePath, startStateNode, endStateNode):
+        for snapshot in nodePath:
+            print(snapshot)
 
 
 if __name__ == "__main__":
