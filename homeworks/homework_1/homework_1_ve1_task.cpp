@@ -1,7 +1,6 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <unordered_map>
 #include <unordered_set>
 
 enum class StateNodeType: uint8_t {
@@ -91,75 +90,58 @@ namespace BUILD {
     }
 };
 
-std::vector<StateNode> generateNeighbourStates(const StateNode& gameStateNode) {
-    std::vector<StateNode> resultNeighboursNodes;
-    StateNode currentStateNode;
+std::vector<std::pair<size_t, size_t>> generateNeighbourMoves(const StateNode& gameStateNode) {
+    std::vector<std::pair<size_t, size_t>> resultMoves;
     size_t separatorIndex = gameStateNode.separatorIndex;
 
     // Slide: right-facing frog moves one position forward into the empty slot
     if (separatorIndex > 0 &&
         gameStateNode.dataState[separatorIndex - 1] == CONSTANTS::RIGHT_ARROW) {
-        currentStateNode = gameStateNode;
-        currentStateNode.stateNodeId = StateNode::idMask;
-        StateNode::idMask += 1;
-        currentStateNode.modify(separatorIndex, separatorIndex - 1);
-        resultNeighboursNodes.push_back(currentStateNode);
+        resultMoves.emplace_back(separatorIndex, separatorIndex - 1);
     }
 
     // Jump: right-facing frog leaps two positions over the opposite-facing frog in between
     if (separatorIndex >= 2 &&
         gameStateNode.dataState[separatorIndex - 2] == CONSTANTS::RIGHT_ARROW &&
         gameStateNode.dataState[separatorIndex - 1] == CONSTANTS::LEFT_ARROW) {
-        currentStateNode = gameStateNode;
-        currentStateNode.stateNodeId = StateNode::idMask;
-        StateNode::idMask += 1;
-        currentStateNode.modify(separatorIndex, separatorIndex - 2);
-        resultNeighboursNodes.push_back(currentStateNode);
+        resultMoves.emplace_back(separatorIndex, separatorIndex - 2);
     }
 
     // Slide: left-facing frog moves one position forward into the empty slot
     if (separatorIndex < gameStateNode.dataState.size() - 1 &&
         gameStateNode.dataState[separatorIndex + 1] == CONSTANTS::LEFT_ARROW) {
-        currentStateNode = gameStateNode;
-        currentStateNode.stateNodeId = StateNode::idMask;
-        StateNode::idMask += 1;
-        currentStateNode.modify(separatorIndex, separatorIndex + 1);
-        resultNeighboursNodes.push_back(currentStateNode);
+        resultMoves.emplace_back(separatorIndex, separatorIndex + 1);
     }
 
     // Jump: left-facing frog leaps two positions over the opposite-facing frog in between
     if (separatorIndex < gameStateNode.dataState.size() - 2 &&
         gameStateNode.dataState[separatorIndex + 2] == CONSTANTS::LEFT_ARROW &&
         gameStateNode.dataState[separatorIndex + 1] == CONSTANTS::RIGHT_ARROW) {
-        currentStateNode = gameStateNode;
-        currentStateNode.stateNodeId = StateNode::idMask;
-        StateNode::idMask += 1;
-        currentStateNode.modify(separatorIndex, separatorIndex + 2);
-        resultNeighboursNodes.push_back(currentStateNode);
+        resultMoves.emplace_back(separatorIndex, separatorIndex + 2);
     }
 
-    return resultNeighboursNodes;
+    return resultMoves;
 }
 
-bool dfs(std::unordered_map<size_t, std::unordered_set<size_t>>& graph,
-    std::unordered_set<std::string>& visited, std::vector<StateNode>& nodePath,
-    const StateNode& currentNode, const StateNode& goalNode) {
-    // Recording the state before exploring its children so backtracking can undo it
-    nodePath.push_back(currentNode);
+bool dfs(std::unordered_set<std::string>& visited, std::vector<std::string>& nodePath,
+    StateNode& currentNode, const StateNode& goalNode) {
+    // Recording the state snapshot before exploring its children so backtracking can undo it
+    std::string currentSnapshot = currentNode.dataState;
+    nodePath.push_back(currentSnapshot);
     if (currentNode.dataState == goalNode.dataState) {
         return true;
     }
 
-    visited.insert(currentNode.dataState);
-    std::vector<StateNode> neighbours = generateNeighbourStates(currentNode);
-    for (const StateNode& childNode: neighbours) {
-        graph[currentNode.stateNodeId].insert(childNode.stateNodeId);
-        if (visited.find(childNode.dataState) != visited.end()) {
-            continue;
+    visited.insert(currentSnapshot);
+    for (const auto& [a, b] : generateNeighbourMoves(currentNode)) {
+        currentNode.modify(a, b);
+        if (visited.find(currentNode.dataState) == visited.end()) {
+            if (dfs(visited, nodePath, currentNode, goalNode)) {
+                return true;
+            }
         }
-        if (dfs(graph, visited, nodePath, childNode, goalNode)) {
-            return true;
-        }
+        // Undo the move — same swap restores the previous state
+        currentNode.modify(a, b);
     }
 
     nodePath.pop_back();
@@ -174,22 +156,23 @@ void solveTask() {
     // Defining start and end state of the program execution
     StateNode startStateNode = BUILD::buildNode(N, StateNodeType::START);
     StateNode endStateNode = BUILD::buildNode(N, StateNodeType::END);
-    
+
     // Defining data structures used by the DFS search
-    std::unordered_map<size_t, std::unordered_set<size_t>> graph;
     std::unordered_set<std::string> visited;
-    std::vector<StateNode> nodePath;
+    std::vector<std::string> nodePath;
 
     // Executing the modified dfs algorithm
-    if (dfs(graph, visited, nodePath, startStateNode, endStateNode)) {
-        for (const StateNode& currentStateNode: nodePath) {
-            std::cout << currentStateNode << std::endl;
+    if (dfs(visited, nodePath, startStateNode, endStateNode)) {
+        for (const std::string& snapshot : nodePath) {
+            std::cout << snapshot << '\n';
         }
     }
 }
 
 #ifndef PROFILING_MODE
 int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
     solveTask();
     return 0;
 }
