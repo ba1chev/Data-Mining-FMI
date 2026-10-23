@@ -24,7 +24,6 @@ public:
     }
 };
 
-
 struct Edge {
 public:
     int to = 0;
