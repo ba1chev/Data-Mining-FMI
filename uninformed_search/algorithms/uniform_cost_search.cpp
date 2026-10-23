@@ -53,46 +53,19 @@ std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
             for (int i = goalNode; i != -1; i = parents[i]) {
                 result.push_back(i);
             }
-            
             std::reverse(result.begin(), result.end());
             return result;
         }
 
-        for (const Edge& currentChild: graph[currentNode.node]) {
-            int currentDistance = currentNode.distance + currentChild.weight;
-            if (currentDistance < distances[currentChild.to]) {
-                q.push(Node(currentChild.to, currentDistance));
-                distances[currentChild.to] = currentDistance;
-                parents[currentChild.to] = currentNode.node;
+        for (const Edge& currentChildNode: graph[currentNode.node]) {
+            int currentDistance = currentNode.distance + currentChildNode.weight;
+            if (currentDistance < distances[currentChildNode.to]) {
+                q.push(Node(currentChildNode.to, currentDistance));
+                distances[currentChildNode.to] = currentDistance;
+                parents[currentChildNode.to] = currentNode.node;
             }
         }
     }
 
     return {};
-}
-
-int main() {
-    std::unordered_map<int, std::vector<Edge>> graph;
-    graph[0].push_back({1, 1});
-    graph[0].push_back({2, 4});
-    graph[1].push_back({3, 2});
-    graph[1].push_back({4, 5});
-    graph[2].push_back({3, 1});
-    graph[3].push_back({4, 1});
-
-    const int start = 0, end = 4, nodes = 5;
-    std::vector<int> path = ucs(graph, start, end, nodes);
-
-    if (path.empty()) {
-        std::cout << "No path found from " << start << " to " << end << "\n";
-    } else {
-        std::cout << "Shortest path from " << start << " to " << end << ": ";
-        for (int i = 0; i < (int)path.size(); ++i) {
-            if (i) std::cout << " -> ";
-            std::cout << path[i];
-        }
-        std::cout << "\n";
-    }
-
-    return 0;
 }

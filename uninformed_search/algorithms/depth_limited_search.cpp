@@ -23,22 +23,3 @@ bool dls(std::unordered_map<int, std::unordered_set<int>>& graph,
     }
     return false;
 }
-
-int main() {
-    std::unordered_map<int, std::unordered_set<int>> graph;
-    graph[0].insert(1);
-    graph[0].insert(2);
-    graph[1].insert(3);
-    graph[1].insert(4);
-    graph[2].insert(5);
-
-    std::unordered_map<int, int> bestDepth;
-    const int tolerance = 2;
-    dls(graph, bestDepth, 0, tolerance, 0);
-
-    for (const auto& [node, depth] : bestDepth) {
-        std::cout << "Node " << node << " reached at depth " << depth << "\n";
-    }
-
-    return 0;
-}
