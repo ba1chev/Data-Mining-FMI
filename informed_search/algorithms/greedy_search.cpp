@@ -73,8 +73,8 @@ std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
                 continue;
             }
 
-            int currentDistance = currentNode.distance + currentChildNode.weight;
             parents[currentChildNode.to] = currentNode.node;
+            int currentDistance = currentNode.distance + currentChildNode.weight;
             pq.push(Node(currentChildNode.to, currentDistance, heuristics(currentChildNode.to)));
         }
     }
