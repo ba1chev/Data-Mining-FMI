@@ -1,30 +1,32 @@
 #include <queue>
+#include <vector>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 
-typedef int (*Heuristics)(int);
+typedef int (*Heuristics)(const int&);
 
 struct Node {
 public:
     int node = 0;
     int distance = 0;
-    int heuristicsValue = 0;
+    int heuristics = 0;
 
-    Node(const int node, const int distance, const int heuristicsValue) {
+    Node(const int node, const int distance,
+        const int heuristics) {
         this->node = node;
         this->distance = distance;
-        this->heuristicsValue = heuristicsValue;
+        this->heuristics = heuristics;
     }
 
     bool operator < (const Node& other) const {
-        return this->heuristicsValue > other.heuristicsValue;
+        return this->heuristics > other.heuristics;
     }
 };
 
 struct Edge {
 public:
-    int to = 0;
+    int to = 0;    
     int weight = 0;
 
     Edge(const int to, const int weight) {
@@ -33,12 +35,9 @@ public:
     }
 };
 
-std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph, 
-    const int startNode, const int goalNode, 
+std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
+    const int startNode, const int goalNode,
     Heuristics heuristics, const int countOfNodes) {
-    if (!heuristics) {
-        throw std::runtime_error("Nullptr detected");
-    }
     if (startNode == goalNode) {
         std::vector<int> result;
         result.push_back(startNode);
@@ -46,20 +45,14 @@ std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
     }
 
     std::priority_queue<Node> pq;
-    std::vector<bool> visited(countOfNodes, false);
-    std::vector<int> distances(countOfNodes, INT_MAX);
+    std::unordered_set<int> visited;
     std::vector<int> parents(countOfNodes, -1);
-
+    std::vector<int> distances(countOfNodes, INT_MAX);
+    
     pq.push(Node(startNode, 0, heuristics(startNode)));
-    distances[startNode] = heuristics(startNode);
     while (!pq.empty()) {
         Node currentNode = pq.top();
         pq.pop();
-
-        if (visited[currentNode.node]) {
-            continue;
-        }
-        visited[currentNode.node] = true;
 
         if (currentNode.node == goalNode) {
             std::vector<int> result;
@@ -69,46 +62,21 @@ std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
             std::reverse(result.begin(), result.end());
             return result;
         }
+
+        if (visited.find(currentNode.node) != visited.end()) {
+            continue;
+        }
+        visited.insert(currentNode.node);
         
         for (const Edge& currentChildNode: graph[currentNode.node]) {
-            int currentDistance = heuristics(currentNode.node) + heuristics(currentChildNode.to);
-            if (currentDistance < distances[currentChildNode.to]) {
-                pq.push(Node(currentChildNode.to, currentDistance, heuristics(currentChildNode.to)));
-                distances[currentChildNode.to] = heuristics(currentChildNode.to);
-                parents[currentChildNode.to] = currentNode.node;
+            if (visited.find(currentChildNode.to) != visited.end()) {
+                continue;
             }
+
+            int currentDistance = currentNode.distance + currentChildNode.weight;
+            parents[currentChildNode.to] = currentNode.node;
+            pq.push(Node(currentChildNode.to, currentDistance, heuristics(currentChildNode.to)));
         }
     }
-
     return {};
-}
-
-const int H[] = {6, 4, 2, 5, 0, 3};
-
-int heuristicsToG(int node) {
-    return H[node];
-}
-
-int main() {
-    const int countOfNodes = 6;
-    std::unordered_map<int, std::vector<Edge>> graph = {
-        {0, {{1, 1}, {3, 2}}},
-        {1, {{2, 5}}},
-        {2, {{4, 9}}},
-        {3, {{4, 1}}}
-    };
-
-    std::vector<int> path = greedySearch(graph, 0, 4, heuristicsToG, countOfNodes);
-    for (int node : path) std::cout << node << ' ';
-    std::cout << std::endl;
-
-    path = greedySearch(graph, 4, 4, heuristicsToG, countOfNodes);
-    for (int node : path) std::cout << node << ' ';
-    std::cout << std::endl;
-
-    path = greedySearch(graph, 0, 5, heuristicsToG, countOfNodes);
-    std::cout << (path.empty() ? "no path" : "found") << std::endl;
-
-    greedySearch(graph, 0, 4, nullptr, countOfNodes);
-    return 0;
 }
