@@ -14,7 +14,6 @@ bool bfs(std::unordered_map<int, std::unordered_set<int>>& graph,
     
     q.push(startNode);
     visited.insert(startNode);
-    std::cout << startNode << std::endl;
     while (!q.empty()) {
         const int current = q.front();
         q.pop();
@@ -22,10 +21,10 @@ bool bfs(std::unordered_map<int, std::unordered_set<int>>& graph,
             return true;
         }
 
-        for (const int currentChild: graph[current]) {
-            if (visited.find(currentChild) == visited.end()) {
-                q.push(currentChild);
-                visited.insert(currentChild);
+        for (const int currentChildNode: graph[current]) {
+            if (visited.find(currentChildNode) == visited.end()) {
+                q.push(currentChildNode);
+                visited.insert(currentChildNode);
             }
         }
     }

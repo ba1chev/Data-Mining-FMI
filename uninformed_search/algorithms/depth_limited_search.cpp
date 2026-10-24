@@ -16,10 +16,13 @@ bool dls(std::unordered_map<int, std::unordered_set<int>>& graph,
     }
 
     bestDepth[currentNode] = counter;
-    for (const int currentChild: graph[currentNode]) {
-        if (dls(graph, bestDepth, currentChild, tolerance, counter + 1)) {
-            return true;
+    for (const int currentChildNode: graph[currentNode]) {
+        if (bestDepth.find(currentChildNode) != bestDepth.end()) {
+            if (dls(graph, bestDepth, currentChildNode, tolerance, counter + 1)) {
+                return true;
+            }
         }
     }
+
     return false;
 }

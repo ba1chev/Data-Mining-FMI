@@ -12,9 +12,9 @@ bool dfs(std::unordered_map<int, std::unordered_set<int>>& graph,
     }
 
     visited.insert(currentNode);
-    for (const int currentChild: graph[currentNode]) {
-        if (visited.find(currentChild) == visited.end()) {
-            if (dfs(graph, visited, currentChild, goalNode)) {
+    for (const int currentChildNode: graph[currentNode]) {
+        if (visited.find(currentChildNode) == visited.end()) {
+            if (dfs(graph, visited, currentChildNode, goalNode)) {
                 return true;
             }
         }
