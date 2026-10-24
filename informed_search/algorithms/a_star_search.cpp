@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-typedef int (*Heuristics)(const int&);
+typedef int (*HeuristicsFunction)(const int&);
 
 struct Node {
 public:
@@ -37,7 +37,7 @@ public:
 
 std::vector<int> aStarSearch(std::unordered_map<int, std::vector<Edge>>& graph,
     const int startNode, const int goalNode,
-    Heuristics heuristics, const int countOfNodes) {
+    HeuristicsFunction heuristicsFunction, const int countOfNodes) {
     if (startNode == goalNode) {
         std::vector<int> result;
         result.push_back(startNode);
@@ -50,7 +50,7 @@ std::vector<int> aStarSearch(std::unordered_map<int, std::vector<Edge>>& graph,
     std::vector<int> distances(countOfNodes, INT_MAX);
 
     distances[startNode] = 0;
-    pq.push(Node(startNode, 0, heuristics(startNode)));
+    pq.push(Node(startNode, 0, heuristicsFunction(startNode)));
     while (!pq.empty()) {
         Node currentNode = pq.top();
         pq.pop();
@@ -79,7 +79,7 @@ std::vector<int> aStarSearch(std::unordered_map<int, std::vector<Edge>>& graph,
                 parents[currentChildNode.to] = currentNode.node;
                 distances[currentChildNode.to] = currentDistance;
                 pq.push(Node(currentChildNode.to, currentDistance, 
-                    heuristics(currentChildNode.to)));
+                    heuristicsFunction(currentChildNode.to)));
             }
         }
     }

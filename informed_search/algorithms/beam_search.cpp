@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-typedef int (*Heuristics)(const int&);
+typedef int (*HeuristicsFunction)(const int&);
 
 struct Node {
 public:
@@ -37,7 +37,7 @@ public:
 
 std::vector<int> beamSearch(std::unordered_map<int, std::vector<Edge>>& graph,
     const int startNode, const int goalNode, const int queueLimit,
-    Heuristics heuristics, const int countOfNodes) {
+    HeuristicsFunction heuristics, const int countOfNodes) {
     if (startNode == goalNode) {
         std::vector<int> result;
         result.push_back(startNode);
