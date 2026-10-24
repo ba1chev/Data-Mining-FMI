@@ -49,6 +49,7 @@ std::vector<int> aStarSearch(std::unordered_map<int, std::vector<Edge>>& graph,
     std::vector<int> parents(countOfNodes, -1);
     std::vector<int> distances(countOfNodes, INT_MAX);
 
+    distances[startNode] = 0;
     pq.push(Node(startNode, 0, heuristics(startNode)));
     while (!pq.empty()) {
         Node currentNode = pq.top();
@@ -77,7 +78,8 @@ std::vector<int> aStarSearch(std::unordered_map<int, std::vector<Edge>>& graph,
             if (currentDistance < distances[currentChildNode.to]) {
                 parents[currentChildNode.to] = currentNode.node;
                 distances[currentChildNode.to] = currentDistance;
-                pq.push(Node(currentChildNode.to, currentDistance, heuristics(currentChildNode.to)));
+                pq.push(Node(currentChildNode.to, currentDistance, 
+                    heuristics(currentChildNode.to)));
             }
         }
     }
