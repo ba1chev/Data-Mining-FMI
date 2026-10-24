@@ -3,8 +3,11 @@
 #include <unordered_set>
 
 bool dls(std::unordered_map<int, std::unordered_set<int>>& graph,
-    std::unordered_map<int, int>& bestDepth, const int currentNode, 
+    std::unordered_map<int, int>& bestDepth, const int currentNode, const int goalNode,
     const int tolerance, const int counter) {
+    if (currentNode == goalNode) {
+        return true;
+    }
     if (counter == tolerance) {
         return false;
     }
@@ -17,10 +20,9 @@ bool dls(std::unordered_map<int, std::unordered_set<int>>& graph,
 
     bestDepth[currentNode] = counter;
     for (const int currentChildNode: graph[currentNode]) {
-        if (bestDepth.find(currentChildNode) != bestDepth.end()) {
-            if (dls(graph, bestDepth, currentChildNode, tolerance, counter + 1)) {
-                return true;
-            }
+        if (dls(graph, bestDepth, currentChildNode, 
+            goalNode, tolerance, counter + 1)) {
+            return true;
         }
     }
 
