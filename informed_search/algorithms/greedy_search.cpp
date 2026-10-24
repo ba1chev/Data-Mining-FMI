@@ -47,7 +47,6 @@ std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
     std::priority_queue<Node> pq;
     std::unordered_set<int> visited;
     std::vector<int> parents(countOfNodes, -1);
-    std::vector<int> distances(countOfNodes, INT_MAX);
     
     pq.push(Node(startNode, 0, heuristics(startNode)));
     while (!pq.empty()) {
