@@ -32,21 +32,21 @@ public:
 
 std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
     const int startNode, const int goalNode, const int countOfNodes) {
-    std::vector<int> distances(countOfNodes, INT_MAX);
-    std::vector<bool> visited(countOfNodes, false);
-    std::vector<int> parents(countOfNodes, -1);
     std::priority_queue<Node> q;
-
+    std::unordered_set<int> visited;
+    std::vector<int> parents(countOfNodes, -1);
+    std::vector<int> distances(countOfNodes, INT_MAX);
+        
     distances[startNode] = 0;
     q.push(Node(startNode, 0));
     while (!q.empty()) {
         Node currentNode = q.top();
         q.pop();
 
-        if (visited[currentNode.node]) {
+        if (visited.find(currentNode.node) != visited.end()) {
             continue;
         }
-        visited[currentNode.node] = true;
+        visited.insert(currentNode.node);
 
         if (currentNode.node == goalNode) {
             std::vector<int> result;
@@ -58,6 +58,10 @@ std::vector<int> ucs(std::unordered_map<int, std::vector<Edge>>& graph,
         }
 
         for (const Edge& currentChildNode: graph[currentNode.node]) {
+            if (visited.find(currentChildNode.to) != visited.end()) {
+                continue;
+            }
+
             int currentDistance = currentNode.distance + currentChildNode.weight;
             if (currentDistance < distances[currentChildNode.to]) {
                 q.push(Node(currentChildNode.to, currentDistance));

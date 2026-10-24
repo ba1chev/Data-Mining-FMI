@@ -9,9 +9,9 @@ bool bfs(std::unordered_map<int, std::unordered_set<int>>& graph,
         return true;
     }
 
-    std::unordered_set<int> visited;
     std::queue<int> q;
-
+    std::unordered_set<int> visited;
+    
     q.push(startNode);
     visited.insert(startNode);
     std::cout << startNode << std::endl;
