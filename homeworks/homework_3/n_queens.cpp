@@ -13,8 +13,8 @@ const size_t CANDIDATES = 32;
 struct Board {
 public:
     int n = 0;
-    std::vector<int> queens;
     std::vector<int> rows;
+    std::vector<int> queens;
     std::vector<int> diagonals;
     std::vector<int> antiDiagonals;
 
