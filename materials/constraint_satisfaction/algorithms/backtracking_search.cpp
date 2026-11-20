@@ -34,6 +34,7 @@ bool isConsistent(const std::unordered_map<int, int>& assignment,
             }
         }
     }
+    
     return true;
 }
 
@@ -55,6 +56,7 @@ bool backtrack(const std::vector<int>& variables,
             assignment.erase(currentVariable);
         }
     }
+
     return false;
 }
 
@@ -65,5 +67,6 @@ std::unordered_map<int, int> backtrackingSearch(const std::vector<int>& variable
     if (backtrack(variables, domains, constraints, assignment, 0)) {
         return assignment;
     }
+
     return {};
 }
