@@ -48,7 +48,7 @@ std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
     std::unordered_set<int> visited;
     std::vector<int> parents(countOfNodes, -1);
     
-    pq.push(Node(startNode, 0, heuristicsFunction(startNode)));
+    pq.push(Node(startNode, INT_MAX, heuristicsFunction(startNode)));
     while (!pq.empty()) {
         Node currentNode = pq.top();
         pq.pop();
@@ -68,13 +68,11 @@ std::vector<int> greedySearch(std::unordered_map<int, std::vector<Edge>>& graph,
         visited.insert(currentNode.node);
         
         for (const Edge& currentChildNode: graph[currentNode.node]) {
-            if (visited.find(currentChildNode.to) != visited.end()) {
-                continue;
+            if (visited.find(currentChildNode.to) == visited.end()) {
+                parents[currentChildNode.to] = currentNode.node;
+                pq.push(Node(currentChildNode.to, INT_MAX, 
+                    heuristicsFunction(currentChildNode.to)));    
             }
-
-            parents[currentChildNode.to] = currentNode.node;
-            int currentDistance = currentNode.distance + currentChildNode.weight;
-            pq.push(Node(currentChildNode.to, currentDistance, heuristicsFunction(currentChildNode.to)));
         }
     }
     

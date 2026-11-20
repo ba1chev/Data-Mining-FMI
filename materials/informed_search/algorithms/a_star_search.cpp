@@ -20,7 +20,8 @@ public:
     }
 
     bool operator < (const Node& other) const {
-        return this->heuristics + this->distance > other.heuristics + other.distance;
+        return this->heuristics + this->distance > 
+            other.heuristics + other.distance;
     }
 };
 
@@ -70,16 +71,15 @@ std::vector<int> aStarSearch(std::unordered_map<int, std::vector<Edge>>& graph,
         }
 
         for (const Edge& currentChildNode: graph[currentNode.node]) {
-            if (visited.find(currentChildNode.to) != visited.end()) {
-                continue;
-            }
+            if (visited.find(currentChildNode.to) == visited.end()) {
+                int currentDistance = currentNode.distance + currentChildNode.weight;
 
-            int currentDistance = currentNode.distance + currentChildNode.weight;
-            if (currentDistance < distances[currentChildNode.to]) {
-                parents[currentChildNode.to] = currentNode.node;
-                distances[currentChildNode.to] = currentDistance;
-                pq.push(Node(currentChildNode.to, currentDistance, 
-                    heuristicsFunction(currentChildNode.to)));
+                if (currentDistance < distances[currentChildNode.to]) {
+                    parents[currentChildNode.to] = currentNode.node;
+                    distances[currentChildNode.to] = currentDistance;
+                    pq.push(Node(currentChildNode.to, currentDistance, 
+                        heuristicsFunction(currentChildNode.to)));
+                }
             }
         }
     }

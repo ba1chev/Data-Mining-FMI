@@ -3,26 +3,25 @@
 #include <unordered_set>
 
 bool dls(std::unordered_map<int, std::unordered_set<int>>& graph,
-    std::unordered_map<int, int>& bestDistance, const int currentNode, const int goalNode,
-    const int tolerance, const int counter) {
+    const int currentNode, const int goalNode,
+    const int currentDepth, const int depthTolerance,
+    std::unordered_map<int, int>& bestDepth) {
     if (currentNode == goalNode) {
         return true;
     }
-    if (counter == tolerance) {
+    if (currentDepth == depthTolerance) {
         return false;
     }
 
-    const auto& currentIterator = bestDistance.find(currentNode);
-    if (currentIterator != bestDistance.end() && 
-        currentIterator->second <= counter) {
-        return false;
-    }
-
-    bestDistance[currentNode] = counter;
+    bestDepth[currentNode] = currentDepth;
     for (const int currentChildNode: graph[currentNode]) {
-        if (dls(graph, bestDistance, currentChildNode, 
-            goalNode, tolerance, counter + 1)) {
-            return true;
+        const auto& currentChildNodeIter = bestDepth.find(currentChildNode);
+        if (currentChildNodeIter == bestDepth.end() || 
+            currentChildNodeIter->second > currentDepth + 1) {
+            if (dls(graph, currentChildNode, goalNode, 
+                currentDepth + 1, depthTolerance, bestDepth)) {
+                return true;    
+            }
         }
     }
 

@@ -17,6 +17,7 @@ bool bfs(std::unordered_map<int, std::unordered_set<int>>& graph,
     while (!q.empty()) {
         const int current = q.front();
         q.pop();
+        
         if (current == goalNode) {
             return true;
         }

@@ -48,7 +48,7 @@ std::vector<int> beamSearch(std::unordered_map<int, std::vector<Edge>>& graph,
     std::unordered_set<int> visited;
     std::vector<int> parents(countOfNodes, -1);
     
-    pq.push(Node(startNode, 0, heuristics(startNode)));
+    pq.push(Node(startNode, INT_MAX, heuristics(startNode)));
     while (!pq.empty()) {
         Node currentNode = pq.top();
         pq.pop();
@@ -68,22 +68,29 @@ std::vector<int> beamSearch(std::unordered_map<int, std::vector<Edge>>& graph,
         }
 
         for (const Edge& currentChildNode: graph[currentNode.node]) {
-            if (visited.find(currentChildNode.to) != visited.end()) {
-                continue;
+            if (visited.find(currentChildNode.to) == visited.end()) {
+                parents[currentChildNode.to] = currentNode.node;
+                pq.push(Node(currentChildNode.to, INT_MAX,
+                    heuristics(currentChildNode.to)));    
             }
-
-            parents[currentChildNode.to] = currentNode.node;
-            int currentDistance = currentNode.distance + currentChildNode.weight;
-            pq.push(Node(currentChildNode.to, currentDistance, heuristics(currentChildNode.to)));
         }
         
         if (pq.size() > queueLimit) {
-            std::priority_queue<Node> trimmedPq;
-            for (size_t i = 0; i < queueLimit; i++) {
-                trimmedPq.push(pq.top());
+            std::priority_queue<Node> tempPq;
+            std::unordered_set<int> tempVisited;
+
+            while (!pq.empty() && tempPq.size() < queueLimit) {
+                const Node bestNode = pq.top();
                 pq.pop();
+
+                if (visited.find(bestNode.node) == visited.end() &&
+                    tempVisited.find(bestNode.node) == tempVisited.end()) {
+                    tempPq.push(bestNode);
+                    tempVisited.insert(bestNode.node);
+                }
             }
-            pq.swap(trimmedPq);
+
+            pq.swap(tempPq);
         }
     }
 
