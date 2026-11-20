@@ -5,6 +5,7 @@ std::vector<int> onePointCrossover(const std::vector<int>& firstParent,
     const std::vector<int>& secondParent, const size_t point) {
     std::vector<int> child(firstParent.begin(), firstParent.begin() + point);
     child.insert(child.end(), secondParent.begin() + point, secondParent.end());
+    
     return child;
 }
 
@@ -13,6 +14,7 @@ std::vector<int> twoPointCrossover(const std::vector<int>& firstParent,
     std::vector<int> child(firstParent.begin(), firstParent.begin() + firstPoint);
     child.insert(child.end(), secondParent.begin() + firstPoint, secondParent.begin() + secondPoint);
     child.insert(child.end(), firstParent.begin() + secondPoint, firstParent.end());
+
     return child;
 }
 
@@ -22,5 +24,6 @@ std::vector<int> uniformCrossover(const std::vector<int>& firstParent,
     for (size_t i = 0; i < firstParent.size(); i++) {
         child.push_back(mask[i] ? firstParent[i] : secondParent[i]);
     }
+
     return child;
 }

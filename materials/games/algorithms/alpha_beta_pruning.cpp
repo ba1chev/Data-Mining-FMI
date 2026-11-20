@@ -5,8 +5,8 @@
 
 struct Node {
 public:
-    std::vector<Node*> children;
     int value = 0;
+    std::vector<Node*> children;
 
     Node(const int value) {
         this->value = value;
@@ -19,6 +19,7 @@ public:
     ~Node() {
         for (Node* currentChild: children) {
             delete currentChild;
+            currentChild = nullptr;
         }
     }
 };
@@ -43,6 +44,7 @@ int alphaBeta(const Node* currentNode, int alpha, int beta, const bool isMaximiz
             break;
         }
     }
+
     return bestValue;
 }
 
@@ -52,6 +54,7 @@ int bestMove(const Node* root, const bool isMaximizing) {
     int beta = INT_MAX;
     for (size_t i = 0; i < root->children.size(); i++) {
         int currentValue = alphaBeta(root->children[i], alpha, beta, !isMaximizing);
+
         if (isMaximizing && currentValue > alpha) {
             alpha = currentValue;
             bestIndex = i;
@@ -60,5 +63,6 @@ int bestMove(const Node* root, const bool isMaximizing) {
             bestIndex = i;
         }
     }
+
     return bestIndex;
 }

@@ -31,10 +31,12 @@ const Chromosome& tournamentSelection(const std::vector<Individual>& population,
     size_t bestIndex = distribution(rng);
     for (int i = 1; i < tournamentSize; i++) {
         size_t currentIndex = distribution(rng);
+        
         if (population[currentIndex].fitness > population[bestIndex].fitness) {
             bestIndex = currentIndex;
         }
     }
+
     return population[bestIndex].chromosome;
 }
 

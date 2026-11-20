@@ -22,15 +22,17 @@ public:
 int countConflicts(const std::unordered_map<int, int>& assignment,
     const std::vector<Constraint>& constraints, const int variable, const int value) {
     int conflicts = 0;
+
     for (const Constraint& currentConstraint: constraints) {
         if (currentConstraint.first == variable &&
             !currentConstraint.isSatisfied(value, assignment.at(currentConstraint.second))) {
-            conflicts++;
+            conflicts += 1;
         } else if (currentConstraint.second == variable &&
             !currentConstraint.isSatisfied(assignment.at(currentConstraint.first), value)) {
-            conflicts++;
+            conflicts += 1;
         }
     }
+
     return conflicts;
 }
 
@@ -50,6 +52,7 @@ std::unordered_map<int, int> minConflicts(const std::vector<int>& variables,
     for (int step = 0; step < maxSteps; step++) {
         std::vector<int> mostConflicted;
         int maxConflicts = 0;
+
         for (const int currentVariable: variables) {
             int currentConflicts = countConflicts(assignment, constraints,
                 currentVariable, assignment[currentVariable]);
