@@ -7,173 +7,300 @@
 #include <iostream>
 #include <algorithm>
 
-const int POPULATION_SIZE = 200;
-const int GENERATIONS = 500;
-const int TOURNAMENT_SIZE = 3;
-const int ELITE_SIZE = 2;
-const double MUTATION_RATE = 0.02;
-const int CHECKPOINTS = 10;
-const double TIME_LIMIT_MS = 10000;
+// Parameters of the genetic algorithm:
+// 1) chromosomes in every generation
+// 2) generations to evolve
+// 3) chromosomes competing in every tournament
+// 4) best chromosomes copied unchanged to the next generation
+// 5) part of the genes flipped by every mutation
+// 6) values printed from the history
+namespace Parameters {
+    const size_t POPULATION_SIZE = 200;
+    const size_t GENERATIONS = 500;
+    const size_t TOURNAMENT_SIZE = 3;
+    const size_t ELITE_SIZE = 2;
+    const double MUTATION_RATE = 0.02;
+    const size_t CHECKPOINTS = 10;
+}
+
+// Defining an abstraction
+// for the genes
+template <class T>
+struct Gene {
+public:
+    T data = T{};
+};
+
+// Defining an abstraction for the
+// chromosomes, the fitness is cached
+// so it is computed only once
+template <class T>
+struct Chromosome {
+public:
+    std::vector<Gene<T>> genes;
+    size_t fitness = 0;
+};
+
+// Defining function that creates
+// a random chromosome for the problem
+template <class T, class P>
+using GeneratorFunction =
+    Chromosome<T> (*)(const P&, std::mt19937&);
+
+// Defining function that measures
+// how good a chromosome is
+template <class T, class P>
+using FitnessFunction =
+    size_t (*)(const Chromosome<T>&, const P&);
+
+// Defining function that turns an invalid
+// chromosome into a valid one
+template <class T, class P>
+using RepairFunction =
+    void (*)(Chromosome<T>&, const P&);
+
+template <class T>
+using CrossoverFunction =
+    Chromosome<T> (*)(const Chromosome<T>&, const Chromosome<T>&, std::mt19937&);
+
+template <class T>
+using MutationFunction =
+    void (*)(Chromosome<T>&, std::mt19937&);
 
 struct Item {
 public:
-    int weight = 0;
-    int value = 0;
+    size_t weight = 0;
+    size_t value = 0;
 
-    Item(const int weight, const int value) {
-        this->weight = weight;
-        this->value = value;
-    }
-
+    // An item without weight is
+    // always worth taking
     double ratio() const {
         return weight == 0 ? INFINITY : static_cast<double>(value) / weight;
     }
 };
 
-struct Individual {
+struct Knapsack {
 public:
-    std::vector<int> genes;
-    int value = 0;
+    size_t capacity = 0;
+    std::vector<Item> items;
+    // Indices of the items from the best
+    // to the worst value per weight
+    std::vector<size_t> byRatio;
+};
 
-    Individual(const std::vector<int>& genes, const int value) {
-        this->genes = genes;
-        this->value = value;
+template <class T, class P>
+class GeneticAlgorithm {
+private:
+    const P& problem;
+    GeneratorFunction<T, P> generator;
+    FitnessFunction<T, P> fitness;
+    RepairFunction<T, P> repair;
+    CrossoverFunction<T> crossover;
+    MutationFunction<T> mutation;
+    std::vector<Chromosome<T>> population;
+
+    void evaluate(Chromosome<T>& chromosome) const {
+        repair(chromosome, problem);
+        chromosome.fitness = fitness(chromosome, problem);
     }
 
-    bool operator < (const Individual& other) const {
-        return this->value > other.value;
+    void sortPopulation() {
+        std::sort(population.begin(), population.end(),
+            [](const Chromosome<T>& first, const Chromosome<T>& second) {
+                return first.fitness > second.fitness;
+            });
+    }
+
+    void initialize(std::mt19937& rng) {
+        population.clear();
+        for (size_t i = 0; i < Parameters::POPULATION_SIZE; i++) {
+            Chromosome<T> chromosome = generator(problem, rng);
+            evaluate(chromosome);
+            population.push_back(chromosome);
+        }
+        sortPopulation();
+    }
+
+    const Chromosome<T>& tournamentSelection(std::mt19937& rng) const {
+        std::uniform_int_distribution<size_t> distribution(0, population.size() - 1);
+        size_t best = distribution(rng);
+        for (size_t i = 1; i < Parameters::TOURNAMENT_SIZE; i++) {
+            size_t current = distribution(rng);
+            if (population[current].fitness > population[best].fitness) {
+                best = current;
+            }
+        }
+
+        return population[best];
+    }
+
+    void nextGeneration(std::mt19937& rng) {
+        // Elitism: the best chromosomes survive unchanged,
+        // so the best fitness never decreases
+        std::vector<Chromosome<T>> next(population.begin(),
+            population.begin() + std::min(Parameters::ELITE_SIZE, population.size()));
+        while (next.size() < Parameters::POPULATION_SIZE) {
+            Chromosome<T> child = crossover(tournamentSelection(rng), tournamentSelection(rng), rng);
+            mutation(child, rng);
+            evaluate(child);
+            next.push_back(child);
+        }
+
+        population.swap(next);
+        sortPopulation();
+    }
+
+public:
+    GeneticAlgorithm(const P& problem, const GeneratorFunction<T, P> generator,
+        const FitnessFunction<T, P> fitness, const RepairFunction<T, P> repair,
+        const CrossoverFunction<T> crossover, const MutationFunction<T> mutation)
+        : problem(problem) {
+        this->generator = generator;
+        this->fitness = fitness;
+        this->repair = repair;
+        this->crossover = crossover;
+        this->mutation = mutation;
+    }
+
+    std::vector<size_t> run(const size_t generations, std::mt19937& rng) {
+        initialize(rng);
+        std::vector<size_t> history = {population.front().fitness};
+        for (size_t generation = 0; generation < generations; generation++) {
+            nextGeneration(rng);
+            history.push_back(population.front().fitness);
+        }
+
+        return history;
     }
 };
 
-Individual repair(std::vector<int> genes, const std::vector<Item>& items,
-    const std::vector<int>& worstFirst, const int capacity) {
-    int weight = 0;
-    for (size_t i = 0; i < items.size(); i++) {
-        weight += genes[i] * items[i].weight;
+Chromosome<bool> generateKnapsackChromosome(const Knapsack& knapsack, std::mt19937& rng) {
+    std::bernoulli_distribution coin(0.5);
+    Chromosome<bool> result;
+    result.genes.resize(knapsack.items.size());
+    for (Gene<bool>& gene: result.genes) {
+        gene.data = coin(rng);
     }
 
-    for (const int currentItem: worstFirst) {
-        if (weight <= capacity) {
-            break;
-        }
-        if (genes[currentItem]) {
-            genes[currentItem] = 0;
-            weight -= items[currentItem].weight;
-        }
-    }
-
-    int value = 0;
-    for (size_t i = 0; i < items.size(); i++) {
-        value += genes[i] * items[i].value;
-    }
-    return Individual(genes, value);
+    return result;
 }
 
-std::vector<int> onePointCrossover(const std::vector<int>& firstParent,
-    const std::vector<int>& secondParent, std::mt19937& rng) {
-    std::uniform_int_distribution<size_t> distribution(0, firstParent.size());
+size_t knapsackFitness(const Chromosome<bool>& chromosome, const Knapsack& knapsack) {
+    // Multiplying instead of branching,
+    // the genes are random and the
+    // branch is mispredicted half the time
+    size_t weight = 0;
+    size_t value = 0;
+    for (size_t i = 0; i < chromosome.genes.size(); i++) {
+        weight += chromosome.genes[i].data * knapsack.items[i].weight;
+        value += chromosome.genes[i].data * knapsack.items[i].value;
+    }
+
+    return weight <= knapsack.capacity ? value : 0;
+}
+
+// While too heavy, drop the taken
+// items with the worst value per weight
+void knapsackRepair(Chromosome<bool>& chromosome, const Knapsack& knapsack) {
+    size_t weight = 0;
+    for (size_t i = 0; i < chromosome.genes.size(); i++) {
+        weight += chromosome.genes[i].data * knapsack.items[i].weight;
+    }
+
+    for (auto it = knapsack.byRatio.rbegin(); it != knapsack.byRatio.rend() && weight > knapsack.capacity; it++) {
+        if (chromosome.genes[*it].data) {
+            chromosome.genes[*it].data = false;
+            weight -= knapsack.items[*it].weight;
+        }
+    }
+}
+
+// The cut point can also be at both ends,
+// then the child is a copy of one parent
+template <class T>
+Chromosome<T> onePointCrossover(const Chromosome<T>& first,
+    const Chromosome<T>& second, std::mt19937& rng) {
+    std::uniform_int_distribution<size_t> distribution(0, first.genes.size());
     size_t point = distribution(rng);
-    std::vector<int> child(firstParent.begin(), firstParent.begin() + point);
-    child.insert(child.end(), secondParent.begin() + point, secondParent.end());
+
+    Chromosome<T> child;
+    child.genes.assign(first.genes.begin(), first.genes.begin() + point);
+    child.genes.insert(child.genes.end(), second.genes.begin() + point, second.genes.end());
     return child;
 }
 
-void bitFlipMutation(std::vector<int>& genes, std::mt19937& rng) {
-    std::uniform_int_distribution<size_t> distribution(0, genes.size() - 1);
-    int flips = std::max(1, static_cast<int>(std::lround(genes.size() * MUTATION_RATE)));
-    for (int i = 0; i < flips; i++) {
-        size_t position = distribution(rng);
-        genes[position] = 1 - genes[position];
+// At least one gene is flipped,
+// so every child differs from its parents
+void bitFlipMutation(Chromosome<bool>& chromosome, std::mt19937& rng) {
+    if (chromosome.genes.empty()) {
+        return;
+    }
+
+    std::uniform_int_distribution<size_t> distribution(0, chromosome.genes.size() - 1);
+    size_t flips = std::max<size_t>(1, std::lround(chromosome.genes.size() * Parameters::MUTATION_RATE));
+    for (size_t i = 0; i < flips; i++) {
+        Gene<bool>& gene = chromosome.genes[distribution(rng)];
+        gene.data = !gene.data;
     }
 }
 
-const std::vector<int>& tournamentSelection(const std::vector<Individual>& population, std::mt19937& rng) {
-    std::uniform_int_distribution<size_t> distribution(0, population.size() - 1);
-    size_t bestIndex = distribution(rng);
-    for (int i = 1; i < TOURNAMENT_SIZE; i++) {
-        size_t currentIndex = distribution(rng);
-        if (population[currentIndex] < population[bestIndex]) {
-            bestIndex = currentIndex;
-        }
+Knapsack readKnapsack() {
+    Knapsack knapsack;
+    size_t count = 0;
+    std::cin >> knapsack.capacity >> count;
+
+    knapsack.items.resize(count);
+    for (Item& item: knapsack.items) {
+        std::cin >> item.weight >> item.value;
     }
-    return population[bestIndex].genes;
+
+    knapsack.byRatio.resize(count);
+    for (size_t i = 0; i < count; i++) {
+        knapsack.byRatio[i] = i;
+    }
+    std::sort(knapsack.byRatio.begin(), knapsack.byRatio.end(),
+        [&knapsack](const size_t first, const size_t second) {
+            return knapsack.items[first].ratio() > knapsack.items[second].ratio();
+        });
+
+    return knapsack;
 }
 
-std::vector<int> geneticAlgorithm(const std::vector<Item>& items, const int capacity, std::mt19937& rng) {
-    auto start = std::chrono::steady_clock::now();
-    std::vector<int> worstFirst(items.size());
-    for (size_t i = 0; i < items.size(); i++) {
-        worstFirst[i] = i;
+// Parameters::CHECKPOINTS values evenly spread over the history:
+// 1) the first one is the initial population
+// 2) the last one is the final generation
+void printHistory(const std::vector<size_t>& history) {
+    for (size_t step = 0; step < Parameters::CHECKPOINTS; step++) {
+        std::cout << history[std::lround(step * (history.size() - 1) / double(Parameters::CHECKPOINTS - 1))] << '\n';
     }
-    std::sort(worstFirst.begin(), worstFirst.end(), [&items](const int first, const int second) {
-        return items[first].ratio() < items[second].ratio();
-    });
+    std::cout << '\n' << history.back() << '\n';
+}
 
-    std::uniform_int_distribution<int> bit(0, 1);
-    std::vector<Individual> population;
-    for (int i = 0; i < POPULATION_SIZE; i++) {
-        std::vector<int> genes(items.size());
-        for (int& currentGene: genes) {
-            currentGene = bit(rng);
-        }
-        population.push_back(repair(genes, items, worstFirst, capacity));
-    }
-    std::sort(population.begin(), population.end());
+void printTime(const std::chrono::steady_clock::time_point& start) {
+    std::chrono::duration<double, std::milli> elapsed =
+        std::chrono::steady_clock::now() - start;
+    std::cout << "# TIMES_MS: alg=" << elapsed.count() << '\n';
+}
 
-    std::vector<int> history;
-    history.push_back(population.front().value);
-    for (int generation = 0; generation < GENERATIONS; generation++) {
-        std::chrono::duration<double, std::milli> elapsed = std::chrono::steady_clock::now() - start;
-        if (elapsed.count() > TIME_LIMIT_MS) {
-            break;
-        }
-
-        std::vector<Individual> nextPopulation(population.begin(), population.begin() + ELITE_SIZE);
-        while (nextPopulation.size() < POPULATION_SIZE) {
-            std::vector<int> child = onePointCrossover(tournamentSelection(population, rng),
-                tournamentSelection(population, rng), rng);
-            bitFlipMutation(child, rng);
-            nextPopulation.push_back(repair(child, items, worstFirst, capacity));
-        }
-
-        std::sort(nextPopulation.begin(), nextPopulation.end());
-        population.swap(nextPopulation);
-        history.push_back(population.front().value);
-    }
-
-    return history;
+bool isTimeOnly() {
+    const char* timeOnly = std::getenv("FMI_TIME_ONLY");
+    return timeOnly != nullptr && std::string(timeOnly) == "1";
 }
 
 int main() {
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-
-    int capacity = 0;
-    int count = 0;
-    std::cin >> capacity >> count;
-    std::vector<Item> items;
-    for (int i = 0; i < count; i++) {
-        int weight = 0;
-        int value = 0;
-        std::cin >> weight >> value;
-        items.push_back(Item(weight, value));
-    }
-
+    Knapsack knapsack = readKnapsack();
     std::mt19937 rng(std::random_device{}());
-    auto start = std::chrono::steady_clock::now();
-    std::vector<int> history = geneticAlgorithm(items, capacity, rng);
-    std::chrono::duration<double, std::milli> elapsed = std::chrono::steady_clock::now() - start;
-    std::cout << "# TIMES_MS: alg=" << elapsed.count() << '\n';
+    GeneticAlgorithm<bool, Knapsack> geneticAlgorithm(knapsack, generateKnapsackChromosome,
+        knapsackFitness, knapsackRepair, onePointCrossover<bool>, bitFlipMutation);
 
-    const char* timeOnly = std::getenv("FMI_TIME_ONLY");
-    if (timeOnly != nullptr && std::string(timeOnly) == "1") {
+    auto start = std::chrono::steady_clock::now();
+    std::vector<size_t> history = geneticAlgorithm.run(Parameters::GENERATIONS, rng);
+    printTime(start);
+
+    if (isTimeOnly()) {
         return 0;
     }
 
-    for (int step = 0; step < CHECKPOINTS; step++) {
-        std::cout << history[std::lround(step * (history.size() - 1) / double(CHECKPOINTS - 1))] << '\n';
-    }
-    std::cout << '\n' << history.back() << '\n';
-
+    printHistory(history);
     return 0;
 }
