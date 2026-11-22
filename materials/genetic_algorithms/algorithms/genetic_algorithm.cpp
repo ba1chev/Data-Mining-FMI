@@ -42,10 +42,10 @@ const Chromosome& tournamentSelection(const std::vector<Individual>& population,
 
 std::pair<Chromosome, std::vector<double>> geneticAlgorithm(RandomIndividualFunction randomIndividual,
     FitnessFunction fitness, CrossoverFunction crossover, MutationFunction mutate, std::mt19937& rng,
-    const int populationSize = 100, const int generations = 500, const int elites = 2,
+    const size_t populationSize = 100, const int generations = 500, const int elites = 2,
     const int tournamentSize = 3, const double targetFitness = INFINITY) {
     std::vector<Individual> population;
-    for (int i = 0; i < populationSize; i++) {
+    for (size_t i = 0; i < populationSize; i++) {
         Chromosome currentChromosome = randomIndividual(rng);
         population.push_back(Individual(currentChromosome, fitness(currentChromosome)));
     }
@@ -59,7 +59,7 @@ std::pair<Chromosome, std::vector<double>> geneticAlgorithm(RandomIndividualFunc
         }
 
         std::vector<Individual> nextPopulation(population.begin(), population.begin() + elites);
-        while (nextPopulation.size() < static_cast<size_t>(populationSize)) {
+        while (nextPopulation.size() < populationSize) {
             const Chromosome& firstParent = tournamentSelection(population, tournamentSize, rng);
             const Chromosome& secondParent = tournamentSelection(population, tournamentSize, rng);
             Chromosome child = mutate(crossover(firstParent, secondParent, rng), rng);

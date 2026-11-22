@@ -233,14 +233,17 @@ bool sameRow(const Variable<T>& first, const Variable<T>& second) {
     return first.data == second.data;
 }
 
+// row1 - col1 == row2 - col2 is checked
+// as row1 + col2 == row2 + col1, so
+// nothing goes below zero
 template <class T>
 bool sameDiagonal(const Variable<T>& first, const Variable<T>& second) {
-    return first.data - static_cast<T>(first.index) == second.data - static_cast<T>(second.index);
+    return first.data + second.index == second.data + first.index;
 }
 
 template <class T>
 bool sameAntiDiagonal(const Variable<T>& first, const Variable<T>& second) {
-    return first.data + static_cast<T>(first.index) == second.data + static_cast<T>(second.index);
+    return first.data + first.index == second.data + second.index;
 }
 
 template <class T>
@@ -296,21 +299,21 @@ std::vector<Constraint<T>> generateNxNQueensConstraints(const size_t N) {
     };
 }
 
-std::vector<int> solve(const size_t N) {
+std::vector<size_t> solve(const size_t N) {
     // No solution exists for N = 2 and N = 3
     if (N == 2 || N == 3) {
         return {};
     }
 
     std::mt19937 rng(std::random_device{}());
-    CSP<int> csp(generateNxNQueensVariables<int>(N), generateNxNQueensDomain<int>(N),
-        generateNxNQueensConstraints<int>(N));
+    CSP<size_t> csp(generateNxNQueensVariables<size_t>(N), generateNxNQueensDomain<size_t>(N),
+        generateNxNQueensConstraints<size_t>(N));
     // Stuck in a local minimum, restart
     // from a new greedy start
     while (true) {
         if (csp.minConflicts(2 * N + 100, rng)) {
-            std::vector<int> result(N);
-            for (const Variable<int>& variable: csp.getVariables()) {
+            std::vector<size_t> result(N);
+            for (const Variable<size_t>& variable: csp.getVariables()) {
                 result[variable.index] = variable.data;
             }
             return result;
@@ -318,16 +321,16 @@ std::vector<int> solve(const size_t N) {
     }
 }
 
-void printBoard(const std::vector<int>& queens) {
+void printBoard(const std::vector<size_t>& queens) {
     for (size_t row = 0; row < queens.size(); row++) {
         for (size_t col = 0; col < queens.size(); col++) {
-            std::cout << (col > 0 ? " " : "") << (queens[col] == static_cast<int>(row) ? '*' : '_');
+            std::cout << (col > 0 ? " " : "") << (queens[col] == row ? '*' : '_');
         }
         std::cout << '\n';
     }
 }
 
-void printSolution(const std::vector<int>& queens) {
+void printSolution(const std::vector<size_t>& queens) {
     if (queens.empty()) {
         std::cout << -1 << '\n';
         return;
@@ -356,7 +359,7 @@ int main(int argc, char* argv[]) {
     std::cin >> N;
 
     auto start = std::chrono::steady_clock::now();
-    std::vector<int> queens = solve(N);
+    std::vector<size_t> queens = solve(N);
     printTime(start);
 
     if (isTimeOnly()) {

@@ -75,7 +75,8 @@ public:
     // An item without weight is
     // always worth taking
     double ratio() const {
-        return weight == 0 ? INFINITY : static_cast<double>(value) / weight;
+        double result = value;
+        return weight == 0 ? INFINITY : result / weight;
     }
 };
 
@@ -270,8 +271,10 @@ Knapsack readKnapsack() {
 // 1) the first one is the initial population
 // 2) the last one is the final generation
 void printHistory(const std::vector<size_t>& history) {
-    for (size_t step = 0; step < Parameters::CHECKPOINTS; step++) {
-        std::cout << history[std::lround(step * (history.size() - 1) / double(Parameters::CHECKPOINTS - 1))] << '\n';
+    size_t last = history.size() - 1;
+    size_t steps = Parameters::CHECKPOINTS - 1;
+    for (size_t step = 0; step <= steps; step++) {
+        std::cout << history[(step * last + steps / 2) / steps] << '\n';
     }
     std::cout << '\n' << history.back() << '\n';
 }

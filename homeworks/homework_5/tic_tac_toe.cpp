@@ -135,7 +135,7 @@ private:
     // so the agent wins fast and loses slow
     int score(const char maximizer) const {
         int value = this->utility(maximizer);
-        int depth = static_cast<int>(this->depth());
+        int depth = this->depth();
         if (value > 0) {
             return Parameters::WIN_SCORE - depth;
         }
@@ -230,10 +230,11 @@ public:
         return Parameters::EMPTY;
     }
 
-    bool isValid(const int row, const int col) const {
-        return row >= 0 && row < static_cast<int>(Parameters::SIZE) &&
-            col >= 0 && col < static_cast<int>(Parameters::SIZE) &&
-            state.at({static_cast<size_t>(row), static_cast<size_t>(col)}) == Parameters::EMPTY;
+    // A row or column of 0 becomes huge after
+    // subtracting 1, so it is caught as out of range
+    bool isValid(const Move& move) const {
+        return move.row < Parameters::SIZE && move.col < Parameters::SIZE &&
+            state.at(move) == Parameters::EMPTY;
     }
 
     std::vector<Move> moves() const override {
@@ -331,16 +332,16 @@ void runGame() {
     while (!tree.isTerminal()) {
         Move move;
         if (tree.player() == human) {
-            int row = 0;
-            int col = 0;
+            size_t row = 0;
+            size_t col = 0;
             if (!(std::cin >> row >> col)) {
                 return;
             }
-            if (!tree.isValid(row - 1, col - 1)) {
+            move = {row - 1, col - 1};
+            if (!tree.isValid(move)) {
                 std::cout << "INVALID MOVE" << '\n';
                 continue;
             }
-            move = {static_cast<size_t>(row - 1), static_cast<size_t>(col - 1)};
         } else {
             move = tree.bestMove();
         }
