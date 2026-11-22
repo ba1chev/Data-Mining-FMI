@@ -1,11 +1,21 @@
-#include <cmath>
 #include <chrono>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <climits>
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+
+struct Board {
+public:
+    int size = 0;
+    int blank = 0;
+    std::vector<int> tiles;
+    std::vector<int> goalPositions;
+};
+
+typedef int (*HeuristicsFunction)(const Board&);
 
 struct Move {
 public:
@@ -20,41 +30,49 @@ public:
     }
 };
 
+// The name is the direction the tile moves,
+// so the blank moves the opposite way
 const std::vector<Move> MOVES = {
     Move(0, 1, "left"), Move(0, -1, "right"), Move(1, 0, "up"), Move(-1, 0, "down")
 };
 
-int manhattan(const int firstCell, const int secondCell, const int size) {
-    return std::abs(firstCell / size - secondCell / size) + std::abs(firstCell % size - secondCell % size);
-}
-
-int totalManhattan(const std::vector<int>& tiles, const std::vector<int>& goalPositions, const int size) {
+int manhattan(const Board& board) {
     int total = 0;
-    for (size_t cell = 0; cell < tiles.size(); cell++) {
-        if (tiles[cell] != 0) {
-            total += manhattan(cell, goalPositions[tiles[cell]], size);
+    for (int cell = 0; cell < board.size * board.size; cell++) {
+        int tile = board.tiles[cell];
+        if (tile != 0) {
+            int goal = board.goalPositions[tile];
+            total += std::abs(cell / board.size - goal / board.size) +
+                std::abs(cell % board.size - goal % board.size);
         }
     }
+
     return total;
 }
 
-bool isSolvable(const std::vector<int>& tiles, const std::vector<int>& goalPositions, const int size) {
+// The parity of the inversions plus the distance of
+// the blank to its goal cell must be even, which also
+// covers boards with an even side and any goal index
+bool isSolvable(const Board& board) {
     int inversions = 0;
-    for (size_t i = 0; i < tiles.size(); i++) {
-        for (size_t j = i + 1; j < tiles.size(); j++) {
-            if (goalPositions[tiles[i]] > goalPositions[tiles[j]]) {
+    for (size_t i = 0; i < board.tiles.size(); i++) {
+        for (size_t j = i + 1; j < board.tiles.size(); j++) {
+            if (board.goalPositions[board.tiles[i]] > board.goalPositions[board.tiles[j]]) {
                 inversions++;
             }
         }
     }
 
-    int blankCell = std::find(tiles.begin(), tiles.end(), 0) - tiles.begin();
-    return (inversions + manhattan(blankCell, goalPositions[0], size)) % 2 == 0;
+    int goal = board.goalPositions[0];
+    int blankDistance = std::abs(board.blank / board.size - goal / board.size) +
+        std::abs(board.blank % board.size - goal % board.size);
+    return (inversions + blankDistance) % 2 == 0;
 }
 
-bool idaStarRecursive(std::vector<int>& tiles, const std::vector<int>& goalPositions, const int size,
-    const int blankCell, const int previousCell, const int distance, const int heuristics,
-    const int tolerance, int& newTolerance, std::vector<std::string>& path) {
+bool idaStarRecursive(Board& board, HeuristicsFunction heuristicsFunction,
+    const int previousBlank, const int distance, const int tolerance,
+    int& newTolerance, std::vector<std::string>& path) {
+    int heuristics = heuristicsFunction(board);
     int currentDistance = distance + heuristics;
     if (currentDistance > tolerance) {
         newTolerance = std::min(newTolerance, currentDistance);
@@ -64,93 +82,104 @@ bool idaStarRecursive(std::vector<int>& tiles, const std::vector<int>& goalPosit
         return true;
     }
 
-    int blankRow = blankCell / size;
-    int blankCol = blankCell % size;
+    int blank = board.blank;
     for (const Move& currentMove: MOVES) {
-        int nextRow = blankRow + currentMove.rowShift;
-        int nextCol = blankCol + currentMove.colShift;
-        int nextCell = nextRow * size + nextCol;
-        if (nextRow < 0 || nextRow >= size || nextCol < 0 || nextCol >= size || nextCell == previousCell) {
+        int nextRow = blank / board.size + currentMove.rowShift;
+        int nextCol = blank % board.size + currentMove.colShift;
+        int nextBlank = nextRow * board.size + nextCol;
+        // Moving the blank back to where it came
+        // from only undoes the last move
+        if (nextRow < 0 || nextRow >= board.size || nextCol < 0 ||
+            nextCol >= board.size || nextBlank == previousBlank) {
             continue;
         }
 
-        int tile = tiles[nextCell];
-        int nextHeuristics = heuristics - manhattan(nextCell, goalPositions[tile], size)
-            + manhattan(blankCell, goalPositions[tile], size);
-        std::swap(tiles[blankCell], tiles[nextCell]);
+        std::swap(board.tiles[blank], board.tiles[nextBlank]);
+        board.blank = nextBlank;
         path.push_back(currentMove.name);
-
-        if (idaStarRecursive(tiles, goalPositions, size, nextCell, blankCell, distance + 1,
-            nextHeuristics, tolerance, newTolerance, path)) {
+        if (idaStarRecursive(board, heuristicsFunction, blank, distance + 1,
+            tolerance, newTolerance, path)) {
             return true;
         }
 
         path.pop_back();
-        std::swap(tiles[blankCell], tiles[nextCell]);
+        board.blank = blank;
+        std::swap(board.tiles[blank], board.tiles[nextBlank]);
     }
 
     return false;
 }
 
-std::vector<std::string> idaStarSearch(std::vector<int> tiles, const std::vector<int>& goalPositions, const int size) {
-    std::vector<std::string> path;
-    int blankCell = std::find(tiles.begin(), tiles.end(), 0) - tiles.begin();
-    int heuristics = totalManhattan(tiles, goalPositions, size);
-    int tolerance = heuristics;
+int idaStarSearch(Board board, HeuristicsFunction heuristicsFunction, std::vector<std::string>& path) {
+    int tolerance = heuristicsFunction(board);
 
     while (true) {
-        int newTolerance = INT_MAX;
-        if (idaStarRecursive(tiles, goalPositions, size, blankCell, -1, 0,
-            heuristics, tolerance, newTolerance, path)) {
-            return path;
+        int nextTolerance = INT_MAX;
+
+        if (idaStarRecursive(board, heuristicsFunction, -1, 0,
+            tolerance, nextTolerance, path)) {
+            return tolerance;
         }
-        tolerance = newTolerance;
+        if (nextTolerance == INT_MAX) {
+            return -1;
+        }
+        tolerance = nextTolerance;
     }
 }
 
-int main() {
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-
+Board readBoard() {
     int N = 0;
     int zeroIndex = 0;
     std::cin >> N >> zeroIndex;
-    std::vector<int> tiles(N + 1);
-    for (int& currentTile: tiles) {
-        std::cin >> currentTile;
+
+    Board board;
+    board.size = std::round(std::sqrt(N + 1));
+    board.tiles.resize(N + 1);
+    for (int cell = 0; cell <= N; cell++) {
+        std::cin >> board.tiles[cell];
+        if (board.tiles[cell] == 0) {
+            board.blank = cell;
+        }
     }
 
-    int size = std::round(std::sqrt(N + 1));
     std::vector<int> goal;
     for (int tile = 1; tile <= N; tile++) {
         goal.push_back(tile);
     }
     goal.insert(goal.begin() + (zeroIndex == -1 ? N : zeroIndex), 0);
 
-    std::vector<int> goalPositions(N + 1);
+    board.goalPositions.resize(N + 1);
     for (int cell = 0; cell <= N; cell++) {
-        goalPositions[goal[cell]] = cell;
+        board.goalPositions[goal[cell]] = cell;
     }
+
+    return board;
+}
+
+void printTime(const std::chrono::steady_clock::time_point& start) {
+    std::chrono::duration<double, std::milli> elapsed =
+        std::chrono::steady_clock::now() - start;
+    std::cout << "# TIMES_MS: alg=" << elapsed.count() << '\n';
+}
+
+bool isTimeOnly() {
+    const char* timeOnly = std::getenv("FMI_TIME_ONLY");
+    return timeOnly != nullptr && std::string(timeOnly) == "1";
+}
+
+int main() {
+    Board board = readBoard();
 
     auto start = std::chrono::steady_clock::now();
-    bool solvable = isSolvable(tiles, goalPositions, size);
     std::vector<std::string> path;
-    if (solvable) {
-        path = idaStarSearch(tiles, goalPositions, size);
-    }
-    std::chrono::duration<double, std::milli> elapsed = std::chrono::steady_clock::now() - start;
-    std::cout << "# TIMES_MS: alg=" << elapsed.count() << '\n';
+    int length = isSolvable(board) ? idaStarSearch(board, manhattan, path) : -1;
+    printTime(start);
 
-    const char* timeOnly = std::getenv("FMI_TIME_ONLY");
-    if (timeOnly != nullptr && std::string(timeOnly) == "1") {
+    if (isTimeOnly()) {
         return 0;
     }
 
-    if (!solvable) {
-        std::cout << -1 << '\n';
-        return 0;
-    }
-    std::cout << path.size() << '\n';
+    std::cout << length << '\n';
     for (const std::string& currentMove: path) {
         std::cout << currentMove << '\n';
     }
